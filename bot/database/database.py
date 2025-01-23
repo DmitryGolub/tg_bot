@@ -1,7 +1,7 @@
 import asyncio
 import psycopg2
 
-from bot.config import DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASSWORD
+from config import DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASSWORD
 
 
 def connected_to_db(func):

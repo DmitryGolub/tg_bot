@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 
-from bot.database.database import check_time_complete
+from database.database import check_time_complete
 
 
 async def remainder(bot) -> None:

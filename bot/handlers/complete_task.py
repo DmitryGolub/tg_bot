@@ -4,8 +4,8 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 
-from bot.database.database import get_tasks_by_user_id, complete_task
-from bot.keyboards.keyboards import keyboard_complete
+from database.database import get_tasks_by_user_id, complete_task
+from keyboards.keyboards import keyboard_complete
 
 
 router = Router()

@@ -1,8 +1,8 @@
 from aiogram import Router
 from aiogram.types import CallbackQuery
 
-from bot.filters.callbacks import CompleteTaskCallback
-from bot.database.database import complete_task
+from filters.callbacks import CompleteTaskCallback
+from database.database import complete_task
 
 
 router = Router()

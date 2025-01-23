@@ -5,9 +5,9 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 
-from bot.states import AddTask
-from bot.keyboards.keyboards import keyboard_choose_day, keyboard_reminder, keyboard_choose_time
-from bot.database.database import add_task
+from states import AddTask
+from keyboards.keyboards import keyboard_choose_day, keyboard_reminder, keyboard_choose_time
+from database.database import add_task
 
 router = Router()
 

@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types.message import Message
 
-from bot.database.database import get_tasks_by_user_id
+from database.database import get_tasks_by_user_id
 
 
 router = Router()

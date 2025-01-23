@@ -1,5 +1,4 @@
 import asyncio
-from datetime import date, timedelta, datetime
 
 from aiogram import Dispatcher, Bot, F
 from aiogram.client.default import DefaultBotProperties
@@ -7,9 +6,9 @@ from aiogram.enums import ParseMode
 
 from config import TOKEN
 
-from bot.handlers import register_all_handlers
-from bot.callbacks import register_all_callbacks
-from bot.utils import reminder
+from handlers import register_all_handlers
+from callbacks import register_all_callbacks
+from utils import reminder
 
 
 dp = Dispatcher()
