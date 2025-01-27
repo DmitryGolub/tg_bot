@@ -8,6 +8,37 @@ def connected_to_db(func):
     async def wrapper(*args, **kwargs):
         cursor, connection = await connected()
         try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id BIGINT PRIMARY KEY,
+                    username VARCHAR(256),
+                    first_name VARCHAR(256),
+                    last_name VARCHAR(256)
+                );
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(256),
+                    start_date TIMESTAMPTZ,
+                    end_date TIMESTAMPTZ,
+                    user_id BIGINT,
+                    complete BOOL DEFAULT false,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                );
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS reminders (
+                    id SERIAL PRIMARY KEY,
+                    status BOOL DEFAULT false,
+                    datetime TIMESTAMPTZ,
+                    task_id INT NOT NULL UNIQUE,
+                    FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
+                );
+            """)
+
             return await func(cursor, *args, **kwargs)
         except Exception as ex:
             print(ex)
@@ -23,7 +54,7 @@ def connected_to_db(func):
 async def complete_task(curs, task_id):
     curs.execute(f"""
         UPDATE tasks
-        SET status = true
+        SET complete = true
         WHERE id = {task_id}
     """)
 
@@ -35,11 +66,11 @@ async def complete_task(curs, task_id):
 
 
 @connected_to_db
-async def get_tasks_by_user_id(curs, user_id, status=None) -> list:
+async def get_tasks_by_user_id(curs, user_id, status=False) -> list:
     curs.execute(f"""
-        SELECT tasks.id, tasks.title, tasks.start_date, tasks.end_date, tasks.user_id, users.username, tasks.status FROM tasks
+        SELECT tasks.id, tasks.title, tasks.start_date, tasks.end_date, tasks.user_id, users.username, tasks.complete FROM tasks
         JOIN users ON users.id = tasks.user_id
-        WHERE user_id = {user_id} AND status = {status}
+        WHERE tasks.user_id = {user_id} AND tasks.complete = {status}
         ORDER BY start_date;
     """)
     rows = curs.fetchall()
@@ -64,30 +95,9 @@ async def get_tasks_by_user_id(curs, user_id, status=None) -> list:
 
 @connected_to_db
 async def add_task(curs, title, start, end, reminder, user_id):
-    curs.execute("""
-        CREATE TABLE IF NOT EXISTS tasks (
-            id SERIAL PRIMARY KEY,
-            title VARCHAR(256),
-            start_date TIMESTAMPTZ,
-            end_date TIMESTAMPTZ,
-            user_id BIGINT,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        );
-    """)
-
-    curs.execute("""
-        CREATE TABLE IF NOT EXISTS reminders (
-            id SERIAL PRIMARY KEY,
-            status BOOL,
-            datetime TIMESTAMPTZ,
-            task_id INT NOT NULL UNIQUE,
-            FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
-        );
-    """)
-
     curs.execute(f"""
-        INSERT INTO tasks (title, start_date, end_date, user_id, status)
-        VALUES ('{title}', '{start}', '{end}', {user_id}, false) RETURNING id;
+        INSERT INTO tasks (title, start_date, end_date, user_id)
+        VALUES ('{title}', '{start}', '{end}', {user_id}) RETURNING id;
     """)
     task_id = curs.fetchall()[0][0]
 
@@ -99,14 +109,6 @@ async def add_task(curs, title, start, end, reminder, user_id):
 
 @connected_to_db
 async def add_user(curs, user_id, username, first_name, last_name):
-    curs.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id BIGINT PRIMARY KEY,
-            username VARCHAR(256),
-            first_name VARCHAR(256),
-            last_name VARCHAR(256)
-        );
-    """)
     curs.execute(f"""SELECT DISTINCT * FROM users WHERE id = {user_id}""")
     if not curs.fetchall():
         curs.execute(f"""
@@ -119,18 +121,8 @@ async def add_user(curs, user_id, username, first_name, last_name):
 
 @connected_to_db
 async def check_time_complete(curs, time_now):
-    curs.execute("""
-            CREATE TABLE IF NOT EXISTS reminders (
-                id SERIAL PRIMARY KEY,
-                status BOOL,
-                datetime TIMESTAMPTZ,
-                task_id INT NOT NULL UNIQUE,
-                FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
-            );
-        """)
-
     curs.execute(f"""
-        SELECT tasks.id, tasks.title, tasks.start_date, tasks.end_date, tasks.user_id, reminders.datetime, reminders.status, tasks.status FROM tasks
+        SELECT tasks.id, tasks.title, tasks.start_date, tasks.end_date, tasks.user_id, tasks.complete FROM tasks
         JOIN reminders ON reminders.task_id = tasks.id
         WHERE reminders.status = false AND reminders.datetime <= '{time_now}';
     """)
@@ -147,8 +139,7 @@ async def check_time_complete(curs, time_now):
                 'task_start_date': row[2],
                 'task_end_date': row[3],
                 'user_id': row[4],
-                'user_name': row[5],
-                'status': row[6],
+                'status': row[5],
             }
         )
 
